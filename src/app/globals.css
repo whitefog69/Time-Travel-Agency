@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
+/**
+ * TimeTravel Agency design tokens.
+ * Deep midnight/ink base, warm gold accents, generous serif display type.
+ * The palette is intentionally dark-only — the brand is an evening brand.
+ */
+@theme {
+  --color-ink-950: #07070c;
+  --color-ink-900: #0b0b14;
+  --color-ink-800: #12121f;
+  --color-ink-700: #1b1b2e;
+  --color-ink-600: #26263f;
+
+  --color-gold-300: #e8d9a0;
+  --color-gold-400: #d9c076;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #a8871d;
+  --color-gold-700: #7d6415;
+
+  --color-parchment: #f4efe4;
+  --color-muted: #9a97a8;
+
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-luxe: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  /* Offset anchor targets so sticky-ish headers never clip section titles. */
+  scroll-padding-top: 5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ink-950);
+  color: var(--color-parchment);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin gold rule used to separate major sections. */
+.rule-gold {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-gold-600),
+    transparent
+  );
+}
+
+/* Gold gradient text for display headings. */
+.text-gold-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-gold-300) 0%,
+    var(--color-gold-500) 45%,
+    var(--color-gold-300) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle film-grain / starfield wash layered over dark sections. */
+.bg-starfield {
+  background-image:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(201, 162, 39, 0.08) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(120, 110, 220, 0.07) 0%,
+      transparent 45%
+    );
+}
+
+/* Animated aurora used as the hero's video fallback. */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate3d(-4%, 3%, 0) scale(1.12);
+    opacity: 1;
+  }
+}
+
+.animate-aurora {
+  animation: aurora-drift 18s var(--ease-luxe) infinite;
+}
+
+.animate-aurora-slow {
+  animation: aurora-drift 26s var(--ease-luxe) infinite reverse;
+}
+
+/* Custom scrollbar inside the chat transcript. */
+.scrollbar-luxe {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gold-700) transparent;
+}
+
+.scrollbar-luxe::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-luxe::-webkit-scrollbar-thumb {
+  background-color: var(--color-gold-700);
+  border-radius: 9999px;
+}
+
+/* Respect users who have asked the OS to reduce motion. Framer Motion reads
+   this via useReducedMotion; this block covers the pure-CSS animations. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-aurora,
+  .animate-aurora-slow {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
