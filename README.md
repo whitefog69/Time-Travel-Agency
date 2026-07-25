@@ -140,6 +140,28 @@ vercel --prod                   # production deployment
 
 > If you deploy without `MISTRAL_API_KEY`, the build still succeeds and the site works — only live chat replies are disabled. Add the key and redeploy to enable them.
 
+### GitHub Pages
+
+Live at **https://whitefog69.github.io/Time-Travel-Agency/**.
+
+Pushing to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which runs `npm run build:static` and publishes `out/`. Enable it once under **Settings → Pages → Source → GitHub Actions**.
+
+To reproduce the Pages build locally:
+
+```bash
+npm run build:static   # writes ./out
+npx serve out          # note: assets are prefixed /Time-Travel-Agency
+```
+
+**What differs on Pages.** GitHub Pages serves static files with no server runtime, so `npm run build:static` sets two variables that change the build:
+
+| Variable                    | Effect                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| `GITHUB_PAGES`              | Applies the `/Time-Travel-Agency` base path and asset prefix for the project subpath. |
+| `NEXT_PUBLIC_STATIC_EXPORT` | Tells the chat widget its backend is absent, so it shows an offline notice.           |
+
+The `/api/chat` route cannot run there — `pageExtensions` excludes it from this build only. **The concierge chat is therefore inactive on the Pages URL**; every other feature (destinations, quiz, booking, animations) is fully static and works. `MISTRAL_API_KEY` is deliberately *not* used by this build: a static site cannot hold a secret. For live chat, use the Vercel deploy above.
+
 ---
 
 ## Project structure

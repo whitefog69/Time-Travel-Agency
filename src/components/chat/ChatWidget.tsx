@@ -15,14 +15,30 @@ interface DisplayMessage extends ChatMessage {
 let messageCounter = 0;
 const nextId = () => `msg-${++messageCounter}`;
 
+/**
+ * The concierge needs the `/api/chat` route, which only exists where a server
+ * runtime does. On a static export (GitHub Pages) the build sets
+ * NEXT_PUBLIC_STATIC_EXPORT, and the composer explains the gap rather than
+ * firing a request that can only 404.
+ */
+const CHAT_ENABLED = process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true";
+
+const CHAT_DISABLED_NOTICE =
+  "The live concierge is offline on this demo — it needs a server to keep the API key safe, and this site is hosted as static pages. Browse the destinations below, or take the quiz to get matched with an era.";
+
 export default function ChatWidget() {
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
-  const [messages, setMessages] = useState<DisplayMessage[]>([
-    { id: "greeting", role: "assistant", content: CONCIERGE_GREETING },
-  ]);
+  const [messages, setMessages] = useState<DisplayMessage[]>(() =>
+    CHAT_ENABLED
+      ? [{ id: "greeting", role: "assistant", content: CONCIERGE_GREETING }]
+      : [
+          { id: "greeting", role: "assistant", content: CONCIERGE_GREETING },
+          { id: "offline", role: "assistant", content: CHAT_DISABLED_NOTICE },
+        ],
+  );
 
   const transcriptRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,7 +69,7 @@ export default function ChatWidget() {
     event.preventDefault();
 
     const trimmed = input.trim();
-    if (!trimmed || pending) return;
+    if (!trimmed || pending || !CHAT_ENABLED) return;
 
     const userMessage: DisplayMessage = {
       id: nextId(),
@@ -251,14 +267,16 @@ export default function ChatWidget() {
                   ref={inputRef}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="Ask about an era…"
+                  placeholder={
+                    CHAT_ENABLED ? "Ask about an era…" : "Concierge offline"
+                  }
                   autoComplete="off"
-                  disabled={pending}
+                  disabled={pending || !CHAT_ENABLED}
                   className="bg-ink-950/70 border-gold-700/30 text-parchment placeholder:text-muted/70 focus:border-gold-500/60 min-w-0 flex-1 rounded-full border px-4 py-2.5 text-sm transition-colors focus:outline-none disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={pending || !input.trim()}
+                  disabled={pending || !input.trim() || !CHAT_ENABLED}
                   aria-label="Send message"
                   className="bg-gold-500 text-ink-950 hover:bg-gold-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >

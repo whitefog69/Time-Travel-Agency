@@ -2,7 +2,12 @@ import { getChatProvider } from "@/lib/ai/provider";
 import { CONCIERGE_SYSTEM_PROMPT } from "@/lib/ai/concierge";
 import { ChatProviderError, type ChatMessage } from "@/lib/ai/types";
 
-/** Runs on the Node.js runtime (Fluid Compute) — the platform default. */
+/**
+ * Runs on the Node.js runtime (Fluid Compute) — the platform default.
+ *
+ * A static export has no server to run this on, so the GitHub Pages build
+ * (`npm run build:static`) drops the route before compiling. See README.
+ */
 export const dynamic = "force-dynamic";
 
 /** Guardrails against oversized or abusive payloads. */
