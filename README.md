@@ -160,7 +160,41 @@ npx serve out          # note: assets are prefixed /Time-Travel-Agency
 | `GITHUB_PAGES`              | Applies the `/Time-Travel-Agency` base path and asset prefix for the project subpath. |
 | `NEXT_PUBLIC_STATIC_EXPORT` | Tells the chat widget its backend is absent, so it shows an offline notice.           |
 
-The `/api/chat` route cannot run there — `pageExtensions` excludes it from this build only. **The concierge chat is therefore inactive on the Pages URL**; every other feature (destinations, quiz, booking, animations) is fully static and works. `MISTRAL_API_KEY` is deliberately *not* used by this build: a static site cannot hold a secret. For live chat, use the Vercel deploy above.
+The `/api/chat` route cannot run there — `pageExtensions` excludes it from this build only. Every other feature (destinations, quiz, booking, animations) is fully static and works. `MISTRAL_API_KEY` is deliberately *not* used by this build: a static site cannot hold a secret.
+
+By default the concierge chat is **inactive** on the Pages URL. To switch it on, see below.
+
+### Enabling the concierge chat on GitHub Pages
+
+The API key must stay on a server — bundling it into a static site would expose
+it to anyone who views source. So host the API on Vercel and point the Pages
+frontend at it.
+
+**1. Deploy the API.** Follow the Vercel steps above, including setting
+`MISTRAL_API_KEY`. The same repo serves both; only the Pages build strips the
+route. Note the deployment URL, e.g. `https://your-app.vercel.app`.
+
+**2. Point Pages at it.** In the repo: **Settings → Secrets and variables →
+Actions → Variables → New repository variable**.
+
+| Name           | Value                                     |
+| -------------- | ----------------------------------------- |
+| `CHAT_API_URL` | `https://your-app.vercel.app/api/chat`    |
+
+A *variable*, not a secret: `NEXT_PUBLIC_*` values are inlined into the client
+bundle and are public by definition. The Mistral key never enters this build.
+
+**3. Re-run the workflow** (Actions → Deploy to GitHub Pages → Run workflow).
+The widget now sends chat turns to the Vercel API, which holds the key.
+
+Leave `CHAT_API_URL` unset and the widget keeps showing its offline notice —
+the site still builds and deploys fine.
+
+**CORS.** `https://whitefog69.github.io` is allowlisted in
+[`src/app/api/chat/route.ts`](src/app/api/chat/route.ts); add more origins with
+the `ALLOWED_ORIGINS` env var (comma-separated) on the API host. Requests from
+any other origin are rejected, so the endpoint cannot be used to spend your API
+credit from an arbitrary page.
 
 ---
 

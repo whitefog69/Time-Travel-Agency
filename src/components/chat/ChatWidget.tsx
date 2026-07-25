@@ -16,12 +16,23 @@ let messageCounter = 0;
 const nextId = () => `msg-${++messageCounter}`;
 
 /**
- * The concierge needs the `/api/chat` route, which only exists where a server
- * runtime does. On a static export (GitHub Pages) the build sets
- * NEXT_PUBLIC_STATIC_EXPORT, and the composer explains the gap rather than
- * firing a request that can only 404.
+ * Where to send chat turns.
+ *
+ * A server-backed deploy (Vercel, `next dev`) serves the route itself, so the
+ * relative path is right. A static export has no backend of its own and must
+ * point at one hosted elsewhere — the Pages build sets
+ * `NEXT_PUBLIC_CHAT_API_URL` to the deployed API's absolute URL.
  */
-const CHAT_ENABLED = process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true";
+const CHAT_ENDPOINT =
+  process.env.NEXT_PUBLIC_CHAT_API_URL?.trim() || "/api/chat";
+
+/**
+ * On a static export with no endpoint configured there is nothing to call, so
+ * the composer explains the gap rather than firing a request that can only 404.
+ */
+const IS_STATIC_EXPORT = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+const CHAT_ENABLED =
+  !IS_STATIC_EXPORT || Boolean(process.env.NEXT_PUBLIC_CHAT_API_URL?.trim());
 
 const CHAT_DISABLED_NOTICE =
   "The live concierge is offline on this demo — it needs a server to keep the API key safe, and this site is hosted as static pages. Browse the destinations below, or take the quiz to get matched with an era.";
@@ -88,7 +99,7 @@ export default function ChatWidget() {
     setPending(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history }),

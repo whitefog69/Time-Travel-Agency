@@ -32,7 +32,14 @@ jobs:
 
       # Sets GITHUB_PAGES / NEXT_PUBLIC_STATIC_EXPORT, so the build picks up the
       # /Time-Travel-Agency base path and drops the server-only chat route.
+      #
+      # CHAT_API_URL points the widget at the API hosted elsewhere (see README).
+      # It is a repository *variable*, not a secret — NEXT_PUBLIC_* values are
+      # inlined into the client bundle and are public by definition. The Mistral
+      # key stays on that API host and never enters this build.
       - run: npm run build:static
+        env:
+          NEXT_PUBLIC_CHAT_API_URL: ${{ vars.CHAT_API_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
