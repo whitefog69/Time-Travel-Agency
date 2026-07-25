@@ -3,19 +3,28 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { asset } from "@/lib/asset";
 
 /**
- * TODO: replace video — drop an MP4 at `/public/videos/hero.mp4` and set
- * HERO_VIDEO_SRC to "/videos/hero.mp4". While it is null (or if the file fails
- * to load), the animated aurora gradient below is used instead, so the hero is
- * never blank.
+ * Hero background footage: a single continuous dolly shot that travels through
+ * all three catalogue destinations in order — the gold transit corridor, Belle
+ * Époque Paris, Renaissance Florence, and the Cretaceous forest.
+ *
+ * The encoded loop is cross-faded back onto its own opening frame, so `loop`
+ * wraps without a visible cut. `hero-poster.jpg` is frame 0 of that same file,
+ * which makes the poster→playback handoff invisible.
+ *
+ * Assets are generated from the source master; see `README.md` (Hero video) for
+ * the exact ffmpeg pipeline if the footage is ever replaced.
  */
-const HERO_VIDEO_SRC: string | null = null;
+const HERO_VIDEO_SRC = "/videos/hero.mp4";
+const HERO_VIDEO_MOBILE_SRC = "/videos/hero-mobile.mp4";
+const HERO_POSTER_SRC = "/images/hero-poster.jpg";
 
 export default function Hero() {
   const reduceMotion = useReducedMotion();
   const [videoFailed, setVideoFailed] = useState(false);
-  const showVideo = Boolean(HERO_VIDEO_SRC) && !videoFailed && !reduceMotion;
+  const showVideo = !videoFailed && !reduceMotion;
 
   return (
     <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden">
@@ -23,27 +32,56 @@ export default function Hero() {
       <div className="absolute inset-0 -z-10">
         {showVideo ? (
           <video
+            key="hero-video"
             className="h-full w-full object-cover"
             autoPlay
             muted
             loop
             playsInline
+            preload="metadata"
+            /* Decorative footage — the hero's meaning lives in the copy. */
+            aria-hidden="true"
+            tabIndex={-1}
             onError={() => setVideoFailed(true)}
-            poster="/images/hero-poster.jpg"
+            poster={asset(HERO_POSTER_SRC)}
           >
-            <source src={HERO_VIDEO_SRC ?? undefined} type="video/mp4" />
+            {/* Narrowest match wins, so the 480p cut is offered to small
+                viewports first and desktops fall through to the 720p master. */}
+            <source
+              src={asset(HERO_VIDEO_MOBILE_SRC)}
+              type="video/mp4"
+              media="(max-width: 768px)"
+            />
+            <source src={asset(HERO_VIDEO_SRC)} type="video/mp4" />
           </video>
         ) : (
-          <div className="bg-ink-950 absolute inset-0">
+          /* Reduced motion, or the file failed: hold the video's own opening
+             frame so the composition is identical, just still. */
+          <div
+            className="bg-ink-950 absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${asset(HERO_POSTER_SRC)})` }}
+          >
             <div className="animate-aurora absolute -top-1/3 -left-1/4 h-[80vh] w-[80vw] rounded-full bg-[radial-gradient(circle,rgba(201,162,39,0.30),transparent_65%)] blur-3xl" />
             <div className="animate-aurora-slow absolute -right-1/4 -bottom-1/3 h-[75vh] w-[75vw] rounded-full bg-[radial-gradient(circle,rgba(96,84,190,0.28),transparent_65%)] blur-3xl" />
             <div className="animate-aurora absolute top-1/4 left-1/3 h-[55vh] w-[55vw] rounded-full bg-[radial-gradient(circle,rgba(184,118,62,0.20),transparent_70%)] blur-3xl" />
           </div>
         )}
 
-        {/* Vignette + scrim keeps the display type legible over any backdrop. */}
-        <div className="from-ink-950/70 via-ink-950/50 to-ink-950 absolute inset-0 bg-gradient-to-b" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(7,7,12,0.85)_100%)]" />
+        {/* Scrim stack. The footage swings from a near-black corridor (~60 luma
+            over the headline) to sunlit Florence marble and Cretaceous canopy
+            (~161), so the type has to survive the bright acts rather than the
+            average. Measured over the loop; adjust together if the cut changes.
+
+            1) Vertical wash — anchors the header and hands off to the section
+               below. Heavier at the top than a dark-only backdrop would need,
+               because the nav sits over peaks of ~126 luma. */}
+        <div className="from-ink-950/85 via-ink-950/60 to-ink-950 absolute inset-0 bg-gradient-to-b" />
+        {/* 2) Centre pad — sits directly behind the headline and CTAs, the one
+               region where contrast is non-negotiable. */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,rgba(7,7,12,0.62),transparent_75%)]" />
+        {/* 3) Vignette — pulls the frame edges down and keeps the eye centred
+               on the receding corridor. */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(7,7,12,0.9)_100%)]" />
       </div>
 
       <div className="mx-auto max-w-4xl px-5 py-28 text-center sm:px-8">

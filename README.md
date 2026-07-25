@@ -235,7 +235,69 @@ src/
 All placeholder art is marked with `TODO: replace image` comments.
 
 - **Destination images** — `src/data/destinations.ts`. Currently Unsplash URLs. To use local files, drop them in `public/images/`, change each `image` field to `/images/your-file.jpg`, and remove the `remotePatterns` block from `next.config.ts`.
-- **Hero video** — `src/components/Hero.tsx`. Place an MP4 at `public/videos/hero.mp4` and set `HERO_VIDEO_SRC` to `"/videos/hero.mp4"`. Until then the animated gradient is used.
+
+---
+
+## Hero video
+
+The hero plays a continuous dolly shot that passes through all three catalogue
+destinations in order — a gold transit corridor, Belle Époque Paris,
+Renaissance Florence, then the Cretaceous forest.
+
+| Asset                            | Size    | Notes                                       |
+| -------------------------------- | ------- | ------------------------------------------- |
+| `public/videos/hero.mp4`         | 2.45 MB | 1280×720, H.264, silent, faststart          |
+| `public/videos/hero-mobile.mp4`  | 1.00 MB | 854×480, served under `(max-width: 768px)`  |
+| `public/images/hero-poster.jpg`  | 69 KB   | Frame 0 of `hero.mp4`                       |
+
+### Regenerating from a new master
+
+The published files are derived from an 8 s source clip. Four things the
+encode fixes, worth preserving if the footage is ever swapped:
+
+1. **Seamless loop** — the tail is cross-faded back onto the clip's own opening
+   frame, so `loop` wraps without a visible cut. The source cut hard from a
+   bright forest to a dark corridor.
+2. **Faststart** — the source carried its `moov` atom at the end of the file,
+   forcing a full download before the first frame could paint.
+3. **No audio track** — the hero is `muted`, so the AAC stream was dead weight.
+4. **Cropped watermark** — a generator mark in the bottom-right corner is
+   cropped out before rescaling back to 16:9.
+
+```bash
+# Requires ffmpeg on PATH. SRC is the source master.
+SRC=source.mp4
+FC="[0:v]crop=1232:693:0:0,scale=1280:720:flags=lanczos,split=2[s1][s2];\
+[s1]trim=0:7.1,setpts=PTS-STARTPTS[body];\
+[s2]trim=0:0.9,setpts=PTS-STARTPTS[head];\
+[body][head]xfade=transition=fade:duration=0.9:offset=6.2[v]"
+
+# 720p master
+ffmpeg -i "$SRC" -filter_complex "$FC" -map "[v]" -an \
+  -c:v libx264 -profile:v high -preset veryslow -crf 26 \
+  -pix_fmt yuv420p -movflags +faststart -g 48 public/videos/hero.mp4
+
+# 480p mobile cut
+ffmpeg -i "$SRC" -filter_complex "$FC;[v]scale=854:480[vs]" -map "[vs]" -an \
+  -c:v libx264 -profile:v high -preset veryslow -crf 28 \
+  -pix_fmt yuv420p -movflags +faststart -g 48 public/videos/hero-mobile.mp4
+
+# Poster = frame 0 of the encoded loop, so poster -> playback is invisible
+ffmpeg -i public/videos/hero.mp4 -vf "select=eq(n\,0)" -vframes 1 -q:v 3 \
+  public/images/hero-poster.jpg
+```
+
+### Legibility
+
+The footage swings from ~60 to ~161 luma behind the headline, so the scrim in
+`Hero.tsx` is tuned for the *bright* acts rather than the average. Compositing
+the three scrim layers over every frame keeps the worst-case contrast at
+9.4:1 for the headline, 4.5:1 for the CTA row, and 6.4:1 for the nav — all
+above their WCAG thresholds. If you replace the footage, re-check those
+numbers before trusting the existing scrim values.
+
+Under `prefers-reduced-motion` the video is not mounted at all; the poster is
+shown as a still background instead, so the composition is unchanged.
 
 ---
 

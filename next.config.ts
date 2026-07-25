@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
         assetPrefix: basePath,
 
         /**
+         * Raw asset URLs (the hero `<video>` sources and poster) are written by
+         * hand, so they need the prefix at runtime. `env` inlines it into the
+         * client bundle for `src/lib/asset.ts`; keep it equal to `basePath`.
+         */
+        env: { NEXT_PUBLIC_BASE_PATH: basePath },
+
+        /**
          * `output: "export"` refuses to build a route handler. Narrowing the
          * page extensions to `.tsx` leaves `src/app/api/chat/route.ts`
          * unmatched, so it is skipped — the file stays in the repo and still
